@@ -52,13 +52,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 进入AR按钮
     arBtn.addEventListener('click', () => {
-        if (!currentNeonImageUrl) {
-            alert('请先生成霓虹灯图片');
+        const text = neonTextInput.value.trim();
+        
+        if (!text) {
+            alert('请先输入文字');
             return;
         }
         
         // 准备AR场景
-        prepareARScene(currentNeonImageUrl);
+        prepareARScene(text);
         
         // 切换到AR屏幕
         showScreen(arScreen);
@@ -118,34 +120,97 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 准备AR场景
-    function prepareARScene(imageUrl) {
-        // 创建一个平面作为霓虹灯招牌
+    function prepareARScene(text) {
+        // 移除现有模型
         if (neonModel.firstChild) {
             neonModel.removeChild(neonModel.firstChild);
         }
         
-        // 创建一个平面实体
+        // 创建一个实体
         const neonEntity = document.createElement('a-entity');
         neonEntity.setAttribute('position', '0 0 -1');
         
-        // 创建材质
-        const material = new THREE.MeshBasicMaterial({
-            map: new THREE.TextureLoader().load(imageUrl),
-            transparent: true,
-            side: THREE.DoubleSide
-        });
-        
-        // 创建平面几何体
-        const geometry = new THREE.PlaneGeometry(1, 0.5);
-        
-        // 创建网格
-        const mesh = new THREE.Mesh(geometry, material);
-        
-        // 将网格添加到实体
-        neonEntity.setObject3D('mesh', mesh);
+        // 创建3D文字
+        create3DNeonText(text, neonEntity);
         
         // 添加到场景
         neonModel.appendChild(neonEntity);
+    }
+    
+    // 创建3D霓虹灯文字
+    function create3DNeonText(text, parentEntity) {
+        // 字体加载器
+        const loader = new THREE.FontLoader();
+        
+        // 使用Three.js内置字体
+        loader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function(font) {
+            // 文字大小根据长度调整
+            const fontSize = Math.max(0.05, 0.2 - (text.length * 0.01));
+            
+            // 创建3D文字几何体
+            const textGeometry = new THREE.TextGeometry(text, {
+                font: font,
+                size: fontSize,
+                height: 0.03, // 文字厚度
+                curveSegments: 12, // 曲线分段数，越高越平滑
+                bevelEnabled: true, // 启用斜角
+                bevelThickness: 0.01, // 斜角厚度
+                bevelSize: 0.005, // 斜角大小
+                bevelSegments: 5 // 斜角分段数
+            });
+            
+            // 居中文字
+            textGeometry.computeBoundingBox();
+            const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+            textGeometry.translate(-textWidth / 2, 0, 0);
+            
+            // 创建发光材质
+            const textMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                emissive: 0xff00ff,
+                emissiveIntensity: 0.8,
+                metalness: 0.3,
+                roughness: 0.2
+            });
+            
+            // 创建文字网格
+            const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            
+            // 添加发光效果
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff00ff,
+                transparent: true,
+                opacity: 0.5
+            });
+            
+            // 创建略大的几何体用于发光效果
+            const glowGeometry = new THREE.TextGeometry(text, {
+                font: font,
+                size: fontSize * 1.05,
+                height: 0.03,
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 0.01,
+                bevelSize: 0.005,
+                bevelSegments: 5
+            });
+            
+            // 居中发光几何体
+            glowGeometry.computeBoundingBox();
+            const glowWidth = glowGeometry.boundingBox.max.x - glowGeometry.boundingBox.min.x;
+            glowGeometry.translate(-glowWidth / 2, 0, 0);
+            
+            // 创建发光网格
+            const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+            
+            // 创建组合对象
+            const textGroup = new THREE.Group();
+            textGroup.add(textMesh);
+            textGroup.add(glowMesh);
+            
+            // 将组合对象添加到实体
+            parentEntity.setObject3D('mesh', textGroup);
+        });
     }
     
     // 拍照功能
