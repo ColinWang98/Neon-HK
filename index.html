@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香港霓虹灯AR体验</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/GLTFLoader.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div id="start-screen" class="screen active">
+            <h1>香港霓虹灯AR体验</h1>
+            <p>体验香港传统霓虹灯文化，创建您自己的霓虹灯招牌</p>
+            <div class="input-container">
+                <input type="text" id="neon-text" placeholder="输入您想要的文字" maxlength="20">
+                <button id="generate-btn">生成霓虹灯</button>
+            </div>
+        </div>
+
+        <div id="preview-screen" class="screen">
+            <div class="preview-container">
+                <div id="neon-preview"></div>
+                <div class="buttons">
+                    <button id="back-btn">返回</button>
+                    <button id="ar-btn">进入AR</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="ar-screen" class="screen">
+            <a-scene id="ar-scene" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+                <a-camera position="0 0 0" look-controls="enabled: true"></a-camera>
+                
+                <a-entity id="neon-model"></a-entity>
+                
+                <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
+                <a-entity light="type: directional; color: #FFF; intensity: 1" position="-0.5 1 1"></a-entity>
+            </a-scene>
+            
+            <div class="ar-ui">
+                <button id="exit-ar-btn">退出AR</button>
+                <button id="take-photo-btn">拍照</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
