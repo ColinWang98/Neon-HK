@@ -1,11 +1,33 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>香港霓虹灯AR体验</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- 引入中文字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'KaiTi';
+            src: local('KaiTi'), local('楷体'), local('STKaiti');
+        }
+        @font-face {
+            font-family: 'STKaiti';
+            src: local('STKaiti'), local('华文楷体'), local('KaiTi');
+        }
+        @font-face {
+            font-family: 'LiSu';
+            src: local('LiSu'), local('隶书'), local('STLiti');
+        }
+        @font-face {
+            font-family: 'SimSun';
+            src: local('SimSun'), local('宋体'), local('NSimSun');
+        }
+    </style>
+</head>
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/FontLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/geometries/TextGeometry.js"></script>
@@ -17,6 +39,17 @@
             <p>体验香港传统霓虹灯文化，创建您自己的霓虹灯招牌</p>
             <div class="input-container">
                 <input type="text" id="neon-text" placeholder="输入您想要的文字" maxlength="20">
+                
+                <div class="font-selector">
+                    <label for="fontSelect">选择字体：</label>
+                    <select id="fontSelect">
+                        <option value="KaiTi">楷书</option>
+                        <option value="STKaiti">北魏楷书</option>
+                        <option value="LiSu">隶书</option>
+                        <option value="SimSun">宋体</option>
+                    </select>
+                </div>
+                
                 <button id="generate-btn">生成霓虹灯</button>
             </div>
         </div>
@@ -32,13 +65,21 @@
         </div>
 
         <div id="ar-screen" class="screen">
-            <a-scene id="ar-scene" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-                <a-camera position="0 0 0" look-controls="enabled: true"></a-camera>
+            <a-scene id="ar-scene" 
+                     embedded 
+                     arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+                     color-space="sRGB" 
+                     renderer="colorManagement: true, physicallyCorrectLights" 
+                     vr-mode-ui="enabled: false" 
+                     device-orientation-permission-ui="enabled: false"
+                     background="color: transparent">
+                
+                <a-camera gps-camera rotation-reader look-controls="enabled: true" cursor="rayOrigin: mouse"></a-camera>
                 
                 <a-entity id="neon-model"></a-entity>
                 
-                <a-entity light="type: ambient; color: #BBB; intensity: 0.5"></a-entity>
-                <a-entity light="type: directional; color: #FFF; intensity: 1" position="-0.5 1 1"></a-entity>
+                <a-entity light="type: ambient; color: #BBB; intensity: 0.8"></a-entity>
+                <a-entity light="type: directional; color: #FFF; intensity: 1.2" position="-0.5 1 1"></a-entity>
             </a-scene>
             
             <div class="ar-ui">
