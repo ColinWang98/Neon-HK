@@ -10,6 +10,7 @@ class PreviewManager {
         this.renderer = null;
         this.isRunning = false;
         this.currentContent = null;
+        this.neonGenerator = new NeonPipeGenerator();
 
         // 拖动控制
         this.isDragging = false;
@@ -25,6 +26,13 @@ class PreviewManager {
      */
     async init() {
         const container = document.getElementById('preview-container');
+
+        // 预加载字体
+        try {
+            await this.neonGenerator.loadFont();
+        } catch (error) {
+            console.warn('字体加载失败:', error);
+        }
 
         // 创建场景
         this.scene = new THREE.Scene();
@@ -234,37 +242,45 @@ class PreviewManager {
     }
 
     /**
-     * 添加霓虹灯文字
+     * 添加霓虹灯文字（使用3D管道）
      */
-    addNeonText(text, color) {
-        // 使用 Canvas 降级方案创建简单的 3D 文字
-        const canvas = this.createNeonCanvas(text, color);
-        const texture = new THREE.CanvasTexture(canvas);
+    async addNeonText(text, color) {
+        try {
+            // 使用 NeonPipeGenerator 生成真实的 3D 管道霓虹灯
+            const neonMesh = await this.neonGenerator.generateText(text, { color });
+            this.addContent(neonMesh);
+        } catch (error) {
+            console.error('生成3D霓虹灯失败，使用Canvas降级:', error);
 
-        const geometry = new THREE.PlaneGeometry(3, 1.5);
-        const material = new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true,
-            side: THREE.DoubleSide
-        });
+            // 降级方案：使用 Canvas
+            const canvas = this.createNeonCanvas(text, color);
+            const texture = new THREE.CanvasTexture(canvas);
 
-        const mesh = new THREE.Mesh(geometry, material);
+            const geometry = new THREE.PlaneGeometry(3, 1.5);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
 
-        // 添加发光效果
-        const glowGeometry = new THREE.PlaneGeometry(3.1, 1.6);
-        const glowMaterial = new THREE.MeshBasicMaterial({
-            color: color,
-            transparent: true,
-            opacity: 0.3
-        });
-        const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
-        glowMesh.position.z = -0.01;
+            const mesh = new THREE.Mesh(geometry, material);
 
-        const group = new THREE.Group();
-        group.add(glowMesh);
-        group.add(mesh);
+            // 添加发光效果
+            const glowGeometry = new THREE.PlaneGeometry(3.1, 1.6);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+            glowMesh.position.z = -0.01;
 
-        this.addContent(group);
+            const group = new THREE.Group();
+            group.add(glowMesh);
+            group.add(mesh);
+
+            this.addContent(group);
+        }
     }
 
     /**

@@ -33,7 +33,7 @@ class NeonARApp {
         this.cacheElements();
 
         // 初始化模块
-        this.arManager = new SimpleARManager();
+        this.arManager = new WebXRARManager();
         this.previewManager = new PreviewManager();
         this.neonGenerator = new NeonPipeGenerator();
         this.aiService = new AIGraffitiService();
@@ -319,13 +319,13 @@ class NeonARApp {
                 await this.arManager.init();
             }
 
-            // 放置霓虹灯（使用新的简化API）
-            this.arManager.placeNeon(
+            // 放置霓虹灯（使用 WebXR + 3D 管道）
+            await this.arManager.placeNeon(
                 this.currentNeonData.text,
                 this.currentNeonData.color
             );
 
-            showToast('点击屏幕放置霓虹灯');
+            showToast('移动设备检测平面...');
             vibrate();
 
         } catch (error) {
@@ -353,7 +353,7 @@ class NeonARApp {
             }
 
             // 添加霓虹灯到预览场景
-            this.previewManager.addNeonText(
+            await this.previewManager.addNeonText(
                 this.currentNeonData.text,
                 this.currentNeonData.color
             );
