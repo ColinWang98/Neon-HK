@@ -73,6 +73,14 @@ class ARManager {
      * 初始化AR Toolkit
      */
     async initARToolkit(container) {
+        // 检查 THREEx 是否已加载
+        if (typeof THREEx === 'undefined') {
+            throw new Error('AR.js 库未加载。请确保已正确引入 AR.js CDN。');
+        }
+
+        // 设置 AR.js 数据文件的基础 URL
+        const arBaseURL = 'https://cdn.jsdelivr.net/npm/ar.js@3.4.5/data/';
+
         // 创建视频源
         this.arToolkitSource = new THREEx.ArToolkitSource({
             sourceType: 'webcam',
@@ -96,7 +104,7 @@ class ARManager {
 
         // 创建AR上下文
         this.arToolkitContext = new THREEx.ArToolkitContext({
-            cameraParametersUrl: THREEx.ArToolkitContext.baseURL + 'data/camera_para.dat',
+            cameraParametersUrl: arBaseURL + 'camera_para.dat',
             detectionMode: this.config.detectionMode,
             matrixCodeType: this.config.matrixCodeType
         });
@@ -119,7 +127,7 @@ class ARManager {
             this.markerRoot,
             {
                 type: 'pattern',
-                patternUrl: THREEx.ArMarkerControls.baseURL + 'data/hiro.patt',
+                patternUrl: arBaseURL + 'hiro.patt',
                 barcodeValue: null
             }
         );

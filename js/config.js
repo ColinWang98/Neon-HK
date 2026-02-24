@@ -64,7 +64,7 @@ const APP_CONFIG = {
     // AI 服务配置
     ai: {
         // 默认服务（用户可在设置中更改）
-        defaultProvider: 'USER_PROVIDED', // 'USER_PROVIDED' | 'ALIYUN' | 'BAIDU' | 'HUGGINGFACE'
+        defaultProvider: 'HUGGINGFACE', // 'USER_PROVIDED' | 'ALIYUN' | 'BAIDU' | 'HUGGINGFACE'
 
         // 服务端点
         services: {

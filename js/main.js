@@ -61,9 +61,11 @@ class NeonARApp {
             // 屏幕
             startScreen: document.getElementById('start-screen'),
             neonInput: document.getElementById('neon-input'),
-            neonPreview: document.getElementById('neon-preview'),
+            neonPreview: document.getElementById('neon-preview-screen'),
+            neonPreviewContainer: document.getElementById('neon-preview-container'),
             graffitiInput: document.getElementById('graffiti-input'),
-            graffitiPreview: document.getElementById('graffiti-preview'),
+            graffitiPreview: document.getElementById('graffiti-preview-screen'),
+            graffitiPreviewContainer: document.getElementById('graffiti-preview-container'),
             arScreen: document.getElementById('ar-screen'),
 
             // 霓虹灯
@@ -267,7 +269,7 @@ class NeonARApp {
             const neonMesh = await this.neonGenerator.generateText(text, { color });
             this.currentNeonData = { text, color, mesh: neonMesh };
 
-            showScreen('neon-preview');
+            showScreen('neon-preview-screen');
             vibrate();
 
         } catch (error) {
@@ -345,7 +347,7 @@ class NeonARApp {
             // 保存提示词
             this.aiService.saveRecentPrompt(prompt);
 
-            showScreen('graffiti-preview');
+            showScreen('graffiti-preview-screen');
             vibrate();
 
         } catch (error) {
@@ -396,9 +398,9 @@ class NeonARApp {
 
         // 返回对应的上一个屏幕
         if (this.currentMode === 'neon') {
-            showScreen('neon-preview');
+            showScreen('neon-preview-screen');
         } else if (this.currentMode === 'graffiti') {
-            showScreen('graffiti-preview');
+            showScreen('graffiti-preview-screen');
         } else {
             showScreen('start-screen');
         }
@@ -470,7 +472,7 @@ class NeonARApp {
         const provider = this.elements.aiProviderSelect.value;
         const needsKey = provider !== 'HUGGINGFACE';
 
-        this.elements.apiKeyGroup.style.display = needsKey ? 'flex' : 'none';
+        this.elements.apiKeyGroup.style.display = needsKey ? 'block' : 'none';
     }
 
     /**

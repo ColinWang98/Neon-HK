@@ -1,224 +1,781 @@
+/**
+ * 香港霓虹灯 AR 2.0 - 样式表
+ * 复古港式霓虹灯招牌风格
+ */
+
+/* ==================== 基础样式 ==================== */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Arial', sans-serif;
+}
+
+:root {
+    /* 霓虹色彩方案 */
+    --neon-magenta: #ff00ff;
+    --neon-cyan: #00ffff;
+    --neon-orange: #ff6600;
+    --neon-yellow: #ffff00;
+    --neon-green: #00ff00;
+    --neon-red: #ff0066;
+
+    /* 背景色 */
+    --bg-dark: #1a1a1a;
+    --bg-darker: #121212;
+    --bg-card: rgba(26, 26, 26, 0.95);
+
+    /* 文字色 */
+    --text-primary: #ffffff;
+    --text-secondary: #b0b0b0;
+    --text-muted: #666666;
+
+    /* 边框色 */
+    --border-color: rgba(255, 0, 255, 0.3);
+    --border-glow: rgba(255, 0, 255, 0.6);
+
+    /* 金属色 */
+    --metal-bronze: #8B7355;
+    --metal-gold: #D4AF37;
 }
 
 body {
-    background-color: #121212;
-    color: #fff;
+    font-family: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    overflow-x: hidden;
+    /* 模拟粗糙墙面纹理 */
+    background-image:
+        linear-gradient(rgba(26, 26, 26, 0.95), rgba(26, 26, 26, 0.95)),
+        repeating-linear-gradient(
+            90deg,
+            #1a1a1a 0px,
+            #1f1f1f 2px,
+            #1a1a1a 4px
+        );
 }
 
+/* ==================== 容器 ==================== */
 .container {
     width: 100%;
     max-width: 500px;
+    margin: 0 auto;
     padding: 20px;
+    position: relative;
 }
 
+/* ==================== 屏幕管理 ==================== */
 .screen {
     display: none;
     width: 100%;
+    min-height: 100vh;
 }
 
 .screen.active {
     display: block;
 }
 
-h1 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    text-align: center;
-    color: #ff00ff;
-    text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff;
+/* ==================== Toast 提示 ==================== */
+#toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--bg-card);
+    border: 2px solid var(--neon-magenta);
+    border-radius: 8px;
+    padding: 12px 24px;
+    color: var(--text-primary);
+    font-size: 14px;
+    z-index: 9999;
+    transition: transform 0.3s ease;
+    box-shadow:
+        0 0 10px var(--neon-magenta),
+        0 0 20px rgba(255, 0, 255, 0.3);
 }
 
-p {
-    text-align: center;
-    margin-bottom: 2rem;
-    color: #f0f0f0;
+#toast.show {
+    transform: translateX(-50%) translateY(0);
 }
 
-.input-container {
+/* ==================== 头部导航 ==================== */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    margin-bottom: 20px;
+}
+
+.app-title {
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--text-primary);
+    text-shadow:
+        0 0 5px var(--neon-magenta),
+        0 0 10px var(--neon-magenta),
+        0 0 20px var(--neon-magenta);
+    letter-spacing: 4px;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 0, 255, 0.1);
+    box-shadow: 0 0 10px var(--neon-magenta);
+}
+
+/* ==================== 启动屏幕 ==================== */
+.start-content {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    align-items: center;
+    padding: 40px 0;
 }
 
-input {
-    padding: 12px;
-    border-radius: 5px;
-    border: 2px solid #ff00ff;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-size: 1rem;
-}
-
-/* 字体选择器样式 */
-.font-selector {
-    margin: 15px 0;
+.hero-title {
+    font-size: 42px;
+    font-weight: 900;
+    margin-bottom: 10px;
     text-align: center;
+    letter-spacing: 6px;
 }
 
-.font-selector label {
-    display: block;
-    margin-bottom: 8px;
-    color: #fff;
+.hero-subtitle {
     font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 50px;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.mode-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+
+.mode-btn {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.mode-btn:hover {
+    border-color: var(--neon-magenta);
+    box-shadow:
+        0 0 15px var(--neon-magenta),
+        inset 0 0 15px rgba(255, 0, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.mode-btn:active {
+    transform: translateY(0);
+}
+
+.mode-icon {
+    font-size: 48px;
+}
+
+.mode-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.mode-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* ==================== 屏幕头部 ==================== */
+.screen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+}
+
+.screen-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-shadow: 0 0 10px var(--neon-magenta);
+}
+
+.back-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.back-btn:hover {
+    background: rgba(255, 0, 255, 0.1);
+}
+
+.spacer {
+    width: 40px;
+}
+
+/* ==================== 输入内容 ==================== */
+.input-content {
+    padding: 20px 0;
+}
+
+.input-group {
+    margin-bottom: 25px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
     font-weight: 500;
 }
 
-.font-selector select {
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid #ff1493;
-    border-radius: 25px;
-    color: #fff;
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
     font-size: 16px;
-    padding: 12px 20px;
-    width: 200px;
+    font-family: inherit;
+    transition: all 0.3s ease;
     outline: none;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+    border-color: var(--neon-magenta);
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+input[type="text"]::placeholder,
+textarea::placeholder {
+    color: var(--text-muted);
+}
+
+textarea {
+    resize: none;
+}
+
+/* ==================== 颜色选择器 ==================== */
+.color-selector {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.color-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 3px solid transparent;
     cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.color-btn::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid transparent;
     transition: all 0.3s ease;
 }
 
-.font-selector select:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #ff69b4;
-    box-shadow: 0 0 20px rgba(255, 20, 147, 0.3);
+.color-btn.selected {
+    border-color: var(--text-primary);
+    box-shadow: 0 0 20px currentColor;
 }
 
-.font-selector select:focus {
-    border-color: #ff69b4;
-    box-shadow: 0 0 25px rgba(255, 20, 147, 0.5);
+.color-btn.selected::before {
+    border-color: var(--neon-magenta);
 }
 
-.font-selector option {
-    background: #1a1a1a;
-    color: #fff;
-    padding: 10px;
+.color-btn:hover {
+    transform: scale(1.1);
 }
 
-/* 按钮样式 */
-button {
+/* ==================== 风格选择器 ==================== */
+.style-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.style-btn {
+    background: var(--bg-card);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
     padding: 12px;
-    border-radius: 5px;
-    border: none;
-    background-color: #ff00ff;
-    color: #fff;
-    font-size: 1rem;
     cursor: pointer;
     transition: all 0.3s ease;
-}
-
-button:hover {
-    background-color: #cc00cc;
-    box-shadow: 0 0 10px #ff00ff;
-}
-
-.preview-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: 8px;
 }
 
-#neon-preview {
+.style-btn:hover {
+    border-color: var(--neon-magenta);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+}
+
+.style-btn.selected {
+    border-color: var(--neon-magenta);
+    box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+}
+
+.style-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+}
+
+.style-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* ==================== 按钮 ==================== */
+button {
+    font-family: inherit;
+}
+
+.primary-btn,
+.secondary-btn,
+.ar-btn {
     width: 100%;
-    height: 200px;
-    border: 2px solid #ff00ff;
-    border-radius: 5px;
+    padding: 16px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
     display: flex;
-    justify-content: center;
     align-items: center;
-    overflow: hidden;
+    justify-content: center;
+    gap: 8px;
 }
 
-.buttons {
+.primary-btn {
+    background: transparent;
+    border: 2px solid var(--neon-magenta);
+    color: var(--neon-magenta);
+    box-shadow:
+        0 0 10px var(--neon-magenta),
+        inset 0 0 10px rgba(255, 0, 255, 0.1);
+}
+
+.primary-btn:hover {
+    background: var(--neon-magenta);
+    color: var(--bg-dark);
+    box-shadow:
+        0 0 20px var(--neon-magenta),
+        0 0 40px rgba(255, 0, 255, 0.4);
+}
+
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.secondary-btn:hover {
+    border-color: var(--neon-magenta);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+}
+
+.ar-btn {
+    background: linear-gradient(135deg, var(--neon-magenta), var(--neon-cyan));
+    border: none;
+    color: var(--bg-dark);
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+}
+
+.ar-btn:hover {
+    box-shadow: 0 0 30px rgba(255, 0, 255, 0.7);
+    transform: scale(1.02);
+}
+
+.btn-icon {
+    font-size: 20px;
+}
+
+/* 按钮加载状态 */
+.loading {
     display: flex;
-    gap: 1rem;
-    width: 100%;
+    align-items: center;
+    gap: 10px;
 }
 
-.buttons button {
+.loading-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== 预览内容 ==================== */
+.preview-content {
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 80px);
+}
+
+.preview-container {
+    flex: 1;
+    background: var(--bg-darker);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 20px;
+    min-height: 300px;
+}
+
+.preview-placeholder {
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+#neon-canvas {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.action-buttons .secondary-btn,
+.action-buttons .ar-btn {
     flex: 1;
 }
 
+/* ==================== AR 屏幕 ==================== */
 #ar-screen {
-    position: relative;
-    height: 100vh;
-    width: 100vw;
-    top: 0;
-    left: 0;
     position: fixed;
-}
-
-/* AR界面样式 */
-#ar-screen {
-    position: relative;
-    width: 100%;
+    top: 0;
+    left: 0;
+    width: 100vw;
     height: 100vh;
-    overflow: hidden;
+    z-index: 100;
+    background: var(--bg-darker);
 }
 
-#ar-scene {
-    width: 100% !important;
-    height: 100% !important;
+#ar-container {
+    width: 100%;
+    height: 100%;
+}
+
+.ar-overlay {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 1;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
-.ar-ui {
+.ar-header {
     position: absolute;
-    bottom: 20px;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: auto;
+}
+
+.ar-btn-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid var(--neon-magenta);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.ar-btn-icon:hover {
+    background: rgba(255, 0, 255, 0.3);
+    box-shadow: 0 0 20px var(--neon-magenta);
+}
+
+.ar-marker-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.marker-frame {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    margin: 0 auto 15px;
+}
+
+.marker-corner {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-color: var(--neon-cyan);
+    border-style: solid;
+    box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.marker-corner.tl {
+    top: 0;
+    left: 0;
+    border-width: 3px 0 0 3px;
+    border-radius: 8px 0 0 0;
+}
+
+.marker-corner.tr {
+    top: 0;
+    right: 0;
+    border-width: 3px 3px 0 0;
+    border-radius: 0 8px 0 0;
+}
+
+.marker-corner.bl {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 3px 3px;
+    border-radius: 0 0 0 8px;
+}
+
+.marker-corner.br {
+    bottom: 0;
+    right: 0;
+    border-width: 0 3px 3px 0;
+    border-radius: 0 0 8px 0;
+}
+
+.ar-marker-hint p {
+    color: var(--text-primary);
+    font-size: 14px;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.ar-controls {
+    position: absolute;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 20px;
-    z-index: 10;
+    gap: 15px;
+    pointer-events: auto;
 }
 
-.ar-ui button {
-    flex: 1;
-    max-width: 150px;
+.ar-control-btn {
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid var(--neon-magenta);
+    border-radius: 12px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
 }
 
-/* 霓虹灯效果 */
-.neon-text {
-    font-family: 'Arial', sans-serif;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #ff00ff, 0 0 20px #ff00ff, 0 0 25px #ff00ff, 0 0 30px #ff00ff;
+.ar-control-btn:hover {
+    background: rgba(255, 0, 255, 0.3);
+    box-shadow: 0 0 20px var(--neon-magenta);
 }
 
-/* 响应式设计 */
-@media (max-width: 600px) {
-    h1 {
-        font-size: 1.5rem;
-    }
-    
-    .container {
-        padding: 15px;
-    }
+.ar-control-btn span {
+    font-size: 14px;
+    font-weight: 600;
 }
 
-/* —— AR 视频显示修复 —— */
-/* 进入 AR 模式时，让页面背景透明以便显示摄像头画面 */
+/* ==================== 模态框 ==================== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border: 2px solid var(--neon-magenta);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    background: rgba(255, 0, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ==================== 设置组 ==================== */
+.setting-group {
+    margin-bottom: 20px;
+}
+
+.setting-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.setting-group select,
+.setting-group input[type="password"] {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.setting-group select:focus,
+.setting-group input[type="password"]:focus {
+    border-color: var(--neon-magenta);
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+}
+
+.setting-group select option {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+}
+
+.setting-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ==================== 页脚 ==================== */
+.app-footer {
+    text-align: center;
+    padding: 30px 0;
+}
+
+.copyright {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ==================== AR 模式样式 ==================== */
 body.ar-mode {
     background: transparent !important;
 }
 
-/* AR 容器背景透明，避免白屏遮挡 */
-#ar-screen { 
-    background: transparent !important;
-}
-
-/* 确保 AR.js 注入的视频全屏覆盖并位于场景下方 */
+/* 确保 AR.js 注入的视频全屏覆盖 */
 #arjs-video,
 video#arjs-video,
 body > video {
@@ -231,17 +788,103 @@ body > video {
     z-index: 0 !important;
 }
 
-/* 让 A-Frame / AR.js 画布在 AR 模式下透明，避免白色背景 */
+/* 让 A-Frame / AR.js 画布透明 */
 .a-canvas,
 canvas#arjs-canvas,
-canvas#arjs-glcanvas {
+canvas#arjs-glcanvas,
+#ar-container canvas {
     background: transparent !important;
 }
 
-/* 让容器在 AR 模式下全屏，避免居中窄栏遮挡摄像头画面 */
+/* AR 模式下容器全屏 */
 body.ar-mode .container {
     max-width: 100vw !important;
     width: 100vw !important;
     padding: 0 !important;
     margin: 0 !important;
 }
+
+/* ==================== 响应式设计 ==================== */
+@media (max-width: 600px) {
+    .hero-title {
+        font-size: 32px;
+        letter-spacing: 4px;
+    }
+
+    .hero-subtitle {
+        font-size: 14px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    .mode-selector {
+        gap: 15px;
+    }
+
+    .style-selector {
+        grid-template-columns: 1fr;
+    }
+
+    .marker-frame {
+        width: 150px;
+        height: 150px;
+    }
+
+    .ar-controls {
+        bottom: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+/* ==================== 霓虹灯文字效果 ==================== */
+.neon-text {
+    font-weight: 900;
+    color: var(--text-primary);
+    text-shadow:
+        0 0 5px var(--text-primary),
+        0 0 10px var(--text-primary),
+        0 0 15px var(--neon-magenta),
+        0 0 20px var(--neon-magenta),
+        0 0 25px var(--neon-magenta),
+        0 0 30px var(--neon-magenta);
+    animation: neon-flicker 3s infinite;
+}
+
+@keyframes neon-flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        text-shadow:
+            0 0 5px var(--text-primary),
+            0 0 10px var(--text-primary),
+            0 0 15px var(--neon-magenta),
+            0 0 20px var(--neon-magenta),
+            0 0 25px var(--neon-magenta),
+            0 0 30px var(--neon-magenta);
+    }
+    20%, 24%, 55% {
+        text-shadow:
+            0 0 2px var(--text-primary),
+            0 0 5px var(--text-primary),
+            0 0 8px var(--neon-magenta),
+            0 0 12px var(--neon-magenta);
+    }
+}
+
+/* ==================== 工具类 ==================== */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mt-3 { margin-top: 24px; }
+
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.mb-3 { margin-bottom: 24px; }
