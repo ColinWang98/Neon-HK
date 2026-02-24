@@ -129,9 +129,7 @@ const APP_CONFIG = {
         default: '"Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif',
         fallback: 'sans-serif',
         // OpenType.js字体路径（用于3D文字生成）
-        chineseFontPath: 'assets/fonts/NotoSansSC-Regular.otf',
-        // Google Fonts直接下载URL（作为CDN后备）
-        chineseFontUrl: 'https://fonts.gstatic.com/s/notosanssc/v36/k3kXo84MPvpLmixcA63oeALhL4iJ-Q7m8HGGjDc1-4A.woff'
+        chineseFontPath: 'assets/fonts/NotoSansCJKsc-Regular.otf'
     }
 };
 
