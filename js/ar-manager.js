@@ -88,8 +88,8 @@ class ARManager {
         }
 
         // 设置 AR.js 数据文件的基础 URL
-        // 使用 GitHub Pages CDN 匹配新的 AR.js 源
-        const arBaseURL = 'https://raw.githack.com/AR-js-org/AR.js/master/three.js/data/';
+        // 使用 unpkg CDN (更可靠)
+        const arBaseURL = 'https://unpkg.com/ar.js@3.4.5/data/';
 
         // 创建视频源
         this.arToolkitSource = new THREEx.ArToolkitSource({

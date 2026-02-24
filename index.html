@@ -15,8 +15,16 @@
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <!-- AR.js - Use GitHub pages CDN for more reliable loading -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/three.js/build/ar.js"></script>
+    <!-- AR.js - Multiple CDN sources for fallback -->
+    <script src="https://unpkg.com/ar.js@3.4.5/build/ar.js"></script>
+    <script>
+        // 如果第一个CDN失败，尝试备用源
+        if (typeof THREEx === 'undefined') {
+            var script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/ar.js@3.4.5/build/ar.js';
+            document.head.appendChild(script);
+        }
+    </script>
 
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -279,11 +287,11 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/config.js?v=2.0"></script>
-    <script src="js/utils.js?v=2.0"></script>
-    <script src="js/neon-pipe.js?v=2.0"></script>
-    <script src="js/ai-service.js?v=2.0"></script>
-    <script src="js/ar-manager.js?v=2.0"></script>
-    <script src="js/main.js?v=2.0"></script>
+    <script src="js/config.js?v=2.1"></script>
+    <script src="js/utils.js?v=2.1"></script>
+    <script src="js/neon-pipe.js?v=2.1"></script>
+    <script src="js/ai-service.js?v=2.1"></script>
+    <script src="js/ar-manager.js?v=2.1"></script>
+    <script src="js/main.js?v=2.1"></script>
 </body>
 </html>
