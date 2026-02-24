@@ -61,6 +61,11 @@
                         <div class="mode-name">AI 涂鸦</div>
                         <div class="mode-desc">AI生成创意涂鸦</div>
                     </button>
+                    <button class="mode-btn preview-mode-btn" data-mode="preview">
+                        <div class="mode-icon">🖼️</div>
+                        <div class="mode-name">桌面预览</div>
+                        <div class="mode-desc">无需摄像头，直接预览</div>
+                    </button>
                 </div>
             </main>
 
@@ -118,9 +123,13 @@
                 </div>
 
                 <div class="action-buttons">
+                    <button id="neon-preview-btn" class="secondary-btn">
+                        <span class="btn-icon">🖼️</span>
+                        <span>桌面预览</span>
+                    </button>
                     <button id="neon-ar-btn" class="ar-btn">
                         <span class="btn-icon">📷</span>
-                        <span>进入 AR</span>
+                        <span>AR模式</span>
                     </button>
                 </div>
             </main>
@@ -190,15 +199,41 @@
                 </div>
 
                 <div class="action-buttons">
-                    <button id="graffiti-regenerate-btn" class="secondary-btn">
-                        <span>重新生成</span>
+                    <button id="graffiti-preview-btn" class="secondary-btn">
+                        <span class="btn-icon">🖼️</span>
+                        <span>桌面预览</span>
                     </button>
                     <button id="graffiti-ar-btn" class="ar-btn">
                         <span class="btn-icon">📷</span>
-                        <span>进入 AR</span>
+                        <span>AR模式</span>
                     </button>
                 </div>
             </main>
+        </div>
+
+        <!-- 桌面预览屏幕 -->
+        <div id="preview-screen" class="screen preview-mode">
+            <div id="preview-container" class="preview-scene">
+                <!-- Three.js 场景将在这里渲染 -->
+            </div>
+
+            <!-- 预览控制 -->
+            <div class="preview-controls">
+                <button id="preview-exit-btn" class="preview-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                    <span>返回</span>
+                </button>
+                <button id="preview-capture-btn" class="preview-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <span>截图</span>
+                </button>
+                <div class="preview-hint">拖动调整位置 • 滚轮缩放</div>
+            </div>
         </div>
 
         <!-- AR 屏幕容器 -->
@@ -296,11 +331,12 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/config.js?v=2.2"></script>
-    <script src="js/utils.js?v=2.2"></script>
-    <script src="js/neon-pipe.js?v=2.2"></script>
-    <script src="js/ai-service.js?v=2.2"></script>
-    <script src="js/ar-manager.js?v=2.2"></script>
-    <script src="js/main.js?v=2.2"></script>
+    <script src="js/config.js?v=2.3"></script>
+    <script src="js/utils.js?v=2.3"></script>
+    <script src="js/neon-pipe.js?v=2.3"></script>
+    <script src="js/ai-service.js?v=2.3"></script>
+    <script src="js/ar-manager.js?v=2.3"></script>
+    <script src="js/preview-manager.js?v=2.3"></script>
+    <script src="js/main.js?v=2.3"></script>
 </body>
 </html>

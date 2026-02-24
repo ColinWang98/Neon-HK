@@ -7,11 +7,12 @@ class NeonARApp {
     constructor() {
         // 模块实例
         this.arManager = null;
+        this.previewManager = null;
         this.neonGenerator = null;
         this.aiService = null;
 
         // 当前状态
-        this.currentMode = null; // 'neon' | 'graffiti'
+        this.currentMode = null; // 'neon' | 'graffiti' | 'preview'
         this.currentNeonData = null;
         this.currentGraffitiUrl = null;
 
@@ -33,6 +34,7 @@ class NeonARApp {
 
         // 初始化模块
         this.arManager = new ARManager();
+        this.previewManager = new PreviewManager();
         this.neonGenerator = new NeonPipeGenerator();
         this.aiService = new AIGraffitiService();
 
@@ -74,6 +76,7 @@ class NeonARApp {
             neonGenerateBtn: document.getElementById('neon-generate-btn'),
             neonCanvas: document.getElementById('neon-canvas'),
             neonArBtn: document.getElementById('neon-ar-btn'),
+            neonPreviewBtn: document.getElementById('neon-preview-btn'),
             neonBackBtn: document.getElementById('neon-back-btn'),
 
             // AI涂鸦
@@ -82,6 +85,7 @@ class NeonARApp {
             graffitiGenerateBtn: document.getElementById('graffiti-generate-btn'),
             graffitiPreviewContainer: document.getElementById('graffiti-preview-container'),
             graffitiArBtn: document.getElementById('graffiti-ar-btn'),
+            graffitiPreviewBtn: document.getElementById('graffiti-preview-btn'),
             graffitiRegenerateBtn: document.getElementById('graffiti-regenerate-btn'),
 
             // AR控制
@@ -129,6 +133,11 @@ class NeonARApp {
             this.enterNeonAR();
         });
 
+        // 霓虹灯桌面预览
+        this.elements.neonPreviewBtn.addEventListener('click', () => {
+            this.enterNeonPreview();
+        });
+
         // 霓虹灯预览返回
         this.elements.neonBackBtn.addEventListener('click', () => {
             showScreen('neon-input');
@@ -152,6 +161,11 @@ class NeonARApp {
         // AI涂鸦进入AR
         this.elements.graffitiArBtn.addEventListener('click', () => {
             this.enterGraffitiAR();
+        });
+
+        // AI涂鸦桌面预览
+        this.elements.graffitiPreviewBtn.addEventListener('click', () => {
+            this.enterGraffitiPreview();
         });
 
         // AI涂鸦重新生成
@@ -316,7 +330,40 @@ class NeonARApp {
         } catch (error) {
             console.error('启动AR失败:', error);
             showToast('启动AR失败: ' + error.message);
-            showScreen('neon-preview');
+            showScreen('neon-preview-screen');
+        }
+    }
+
+    /**
+     * 进入霓虹灯桌面预览模式
+     */
+    async enterNeonPreview() {
+        if (!this.currentNeonData) {
+            showToast('请先生成霓虹灯');
+            return;
+        }
+
+        showScreen('preview-screen');
+
+        try {
+            // 初始化预览管理器
+            if (!this.previewManager.isRunning) {
+                await this.previewManager.init();
+            }
+
+            // 添加霓虹灯到预览场景
+            this.previewManager.addNeonText(
+                this.currentNeonData.text,
+                this.currentNeonData.color
+            );
+
+            showToast('拖动调整位置，滚轮缩放');
+            vibrate();
+
+        } catch (error) {
+            console.error('启动预览失败:', error);
+            showToast('启动预览失败: ' + error.message);
+            showScreen('neon-preview-screen');
         }
     }
 
@@ -394,7 +441,37 @@ class NeonARApp {
         } catch (error) {
             console.error('启动AR失败:', error);
             showToast('启动AR失败: ' + error.message);
-            showScreen('graffiti-preview');
+            showScreen('graffiti-preview-screen');
+        }
+    }
+
+    /**
+     * 进入AI涂鸦桌面预览模式
+     */
+    async enterGraffitiPreview() {
+        if (!this.currentGraffitiUrl) {
+            showToast('请先生成涂鸦');
+            return;
+        }
+
+        showScreen('preview-screen');
+
+        try {
+            // 初始化预览管理器
+            if (!this.previewManager.isRunning) {
+                await this.previewManager.init();
+            }
+
+            // 添加涂鸦到预览场景
+            this.previewManager.addGraffiti(this.currentGraffitiUrl);
+
+            showToast('拖动调整位置，滚轮缩放');
+            vibrate();
+
+        } catch (error) {
+            console.error('启动预览失败:', error);
+            showToast('启动预览失败: ' + error.message);
+            showScreen('graffiti-preview-screen');
         }
     }
 
