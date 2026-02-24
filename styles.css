@@ -500,15 +500,41 @@ button {
     width: 100vw;
     height: 100vh;
     z-index: 100;
-    background: var(--bg-darker);
+    background: #000;
 }
 
-#ar-container {
+/* 摄像头视频背景 */
+#ar-video {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    object-fit: cover;
+    z-index: 1;
 }
 
+/* Three.js 渲染层 */
+#ar-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* AR UI 层 */
 .ar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
     position: absolute;
     top: 0;
     left: 0;
@@ -546,99 +572,26 @@ button {
     box-shadow: 0 0 20px var(--neon-magenta);
 }
 
-.ar-marker-hint {
+/* AR 提示 */
+.ar-hint {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
     pointer-events: none;
+    transition: opacity 0.3s ease;
 }
 
-.marker-frame {
-    width: 200px;
-    height: 200px;
-    position: relative;
-    margin: 0 auto 15px;
-}
-
-.marker-corner {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    border-color: var(--neon-cyan);
-    border-style: solid;
-    box-shadow: 0 0 10px var(--neon-cyan);
-}
-
-.marker-corner.tl {
-    top: 0;
-    left: 0;
-    border-width: 3px 0 0 3px;
-    border-radius: 8px 0 0 0;
-}
-
-.marker-corner.tr {
-    top: 0;
-    right: 0;
-    border-width: 3px 3px 0 0;
-    border-radius: 0 8px 0 0;
-}
-
-.marker-corner.bl {
-    bottom: 0;
-    left: 0;
-    border-width: 0 0 3px 3px;
-    border-radius: 0 0 0 8px;
-}
-
-.marker-corner.br {
-    bottom: 0;
-    right: 0;
-    border-width: 0 3px 3px 0;
-    border-radius: 0 0 8px 0;
-}
-
-.ar-marker-hint p {
+.ar-hint p {
     color: var(--text-primary);
-    font-size: 14px;
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
-}
-
-.marker-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: 20px;
-    opacity: 0.9;
-}
-
-.download-marker-btn {
-    margin-top: 15px;
-    padding: 10px 20px;
-    background: rgba(0, 255, 255, 0.2);
-    border: 2px solid var(--neon-cyan);
-    border-radius: 20px;
-    color: var(--neon-cyan);
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    pointer-events: auto;
+    text-shadow: 0 0 15px rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px 25px;
+    border-radius: 25px;
     backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-}
-
-.download-marker-btn:hover {
-    background: rgba(0, 255, 255, 0.4);
-    box-shadow: 0 0 20px var(--neon-cyan);
-}
-
-.download-marker-btn svg {
-    width: 16px;
-    height: 16px;
 }
 
 .ar-controls {

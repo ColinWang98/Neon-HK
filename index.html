@@ -61,11 +61,6 @@
                         <div class="mode-name">AI 涂鸦</div>
                         <div class="mode-desc">AI生成创意涂鸦</div>
                     </button>
-                    <button class="mode-btn preview-mode-btn" data-mode="preview">
-                        <div class="mode-icon">🖼️</div>
-                        <div class="mode-name">桌面预览</div>
-                        <div class="mode-desc">无需摄像头，直接预览</div>
-                    </button>
                 </div>
             </main>
 
@@ -236,8 +231,12 @@
             </div>
         </div>
 
-        <!-- AR 屏幕容器 -->
+        <!-- AR 屏幕容器 (移动端点击放置) -->
         <div id="ar-screen" class="screen">
+            <!-- 摄像头背景 -->
+            <video id="ar-video" autoplay playsinline muted></video>
+
+            <!-- Three.js 渲染层 -->
             <div id="ar-container"></div>
 
             <!-- AR UI 层 -->
@@ -256,32 +255,11 @@
                     </button>
                 </div>
 
-                <div class="ar-marker-hint" id="ar-marker-hint">
-                    <div class="marker-frame">
-                        <div class="marker-corner tl"></div>
-                        <div class="marker-corner tr"></div>
-                        <div class="marker-corner bl"></div>
-                        <div class="marker-corner br"></div>
-                        <img id="hiro-marker-img" src="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" alt="Hiro Marker" class="marker-image">
-                    </div>
-                    <p>将 Hiro 标记对准摄像头</p>
-                    <button id="download-marker-btn" class="download-marker-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                        下载标记
-                    </button>
+                <div class="ar-hint" id="ar-hint">
+                    <p>点击屏幕放置霓虹灯</p>
                 </div>
 
                 <div class="ar-controls">
-                    <button id="ar-place-btn" class="ar-control-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                        </svg>
-                        <span>放置</span>
-                    </button>
                     <button id="ar-reset-btn" class="ar-control-btn">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -331,12 +309,12 @@
     </div>
 
     <!-- JavaScript -->
-    <script src="js/config.js?v=2.3"></script>
-    <script src="js/utils.js?v=2.3"></script>
-    <script src="js/neon-pipe.js?v=2.3"></script>
-    <script src="js/ai-service.js?v=2.3"></script>
-    <script src="js/ar-manager.js?v=2.3"></script>
-    <script src="js/preview-manager.js?v=2.3"></script>
-    <script src="js/main.js?v=2.3"></script>
+    <script src="js/config.js?v=3.0"></script>
+    <script src="js/utils.js?v=3.0"></script>
+    <script src="js/neon-pipe.js?v=3.0"></script>
+    <script src="js/ai-service.js?v=3.0"></script>
+    <script src="js/preview-manager.js?v=3.0"></script>
+    <script src="js/simple-ar-manager.js?v=3.0"></script>
+    <script src="js/main.js?v=3.0"></script>
 </body>
 </html>

@@ -12,7 +12,7 @@ class NeonARApp {
         this.aiService = null;
 
         // 当前状态
-        this.currentMode = null; // 'neon' | 'graffiti' | 'preview'
+        this.currentMode = null; // 'neon' | 'graffiti'
         this.currentNeonData = null;
         this.currentGraffitiUrl = null;
 
@@ -33,7 +33,7 @@ class NeonARApp {
         this.cacheElements();
 
         // 初始化模块
-        this.arManager = new ARManager();
+        this.arManager = new SimpleARManager();
         this.previewManager = new PreviewManager();
         this.neonGenerator = new NeonPipeGenerator();
         this.aiService = new AIGraffitiService();
@@ -319,12 +319,13 @@ class NeonARApp {
                 await this.arManager.init();
             }
 
-            this.arManager.start();
+            // 放置霓虹灯（使用新的简化API）
+            this.arManager.placeNeon(
+                this.currentNeonData.text,
+                this.currentNeonData.color
+            );
 
-            // 设置内容
-            this.arManager.placeNeon(this.currentNeonData.mesh.clone());
-
-            showToast('将AR标记对准摄像头');
+            showToast('点击屏幕放置霓虹灯');
             vibrate();
 
         } catch (error) {
@@ -430,12 +431,10 @@ class NeonARApp {
                 await this.arManager.init();
             }
 
-            this.arManager.start();
-
             // 设置涂鸦
             this.arManager.placeGraffiti(this.currentGraffitiUrl);
 
-            showToast('将AR标记对准摄像头，然后点击放置');
+            showToast('点击屏幕放置涂鸦');
             vibrate();
 
         } catch (error) {
