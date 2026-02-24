@@ -1,33 +1,226 @@
-# 香港霓虹灯AR体验
+# 香港霓虹灯 AR 2.0
 
-这是一个基于WebXR的轻量级应用，旨在帮助人们体验香港传统霓虹灯文化。用户可以输入文字，生成霓虹灯效果的图片，并在AR环境中查看和拍照。
+移动端友好的沉浸式AR体验，支持霓虹灯文字和AI涂鸦两种模式。
 
 ## 功能特点
 
-- 用户可输入自定义文字，生成霓虹灯效果
-- 支持在AR环境中展示生成的霓虹灯招牌
-- 提供拍照功能，保存AR场景
-- 轻量级设计，无需安装额外应用，通过浏览器即可体验
+### 霓虹灯文字模式 💡
+- 输入文字，生成发光霓虹灯效果
+- 多种霓虹色彩选择
+- 基于OpenType.js的管道式3D文字生成
+- 双层管结构（内层发光核心 + 外层玻璃管）
+
+### AI涂鸦模式 🎨
+- 输入描述，AI生成涂鸦图片
+- 多种风格预设（赛博朋克、传统港式、抽象艺术、极简）
+- 支持多个AI服务提供商
+- AR模式下将涂鸦投射到真实墙面
+
+### AR体验
+- 基于AR.js的移动端友好的AR实现
+- 支持标记检测和点击放置
+- 拍照功能保存AR场景
 
 ## 技术栈
 
-- HTML5 / CSS3 / JavaScript
-- Canvas API 用于霓虹灯效果生成
-- A-Frame 用于WebXR功能
-- Three.js 用于3D渲染
+- **前端**: HTML5 / CSS3 / JavaScript (ES6+)
+- **3D渲染**: Three.js r128
+- **AR引擎**: AR.js 3.4.5
+- **字体处理**: OpenType.js 1.3.4
+- **部署**: GitHub Pages / Vercel
 
-## 使用方法
+## 快速开始
 
-1. 访问网站
-2. 在输入框中输入您想要的文字
-3. 点击"生成霓虹灯"按钮查看预览
-4. 点击"进入AR"按钮在AR环境中体验
-5. 使用"拍照"按钮保存您的AR场景
+### 在线体验
+
+访问部署的网站：
+- GitHub Pages: `https://yourusername.github.io/neon-hk/`
+- Vercel: `https://your-project.vercel.app`
+
+### 本地开发
+
+1. 克隆仓库
+```bash
+git clone https://github.com/yourusername/neon-hk.git
+cd neon-hk
+```
+
+2. 启动本地服务器（需要HTTPS支持摄像头）
+
+使用 Python:
+```bash
+# Python 3
+python -m http.server 8000
+
+# Python 2
+python -m SimpleHTTPServer 8000
+```
+
+或使用 Node.js:
+```bash
+npx http-server -p 8000 --cors
+```
+
+3. 访问 `https://localhost:8000`（注意是HTTPS）
+
+### 使用本地HTTPS（开发时）
+
+```bash
+# 使用 mkcert 创建本地证书
+mkcert -install
+mkcert localhost 127.0.0.1
+
+# 使用证书启动服务器
+python -m http.server 8000 --cert localhost.pem --key localhost-key.pem
+```
+
+## 部署
+
+### Vercel 部署（推荐）
+
+1. 推送代码到 GitHub
+2. 在 [Vercel](https://vercel.com) 导入项目
+3. Vercel 会自动检测静态网站配置
+4. 点击部署即可
+
+### GitHub Pages 部署
+
+1. 推送代码到 GitHub
+2. 进入仓库设置 → Pages
+3. 选择分支（通常是 `main` 或 `master`）
+4. 保存，等待部署完成
+
+## AI服务配置
+
+### 免费选项（推荐新手）
+
+选择 **Hugging Face**（无需API Key）:
+- 在设置中选择"AI服务提供商"为 Hugging Face
+- 有速率限制，但完全免费
+
+### 付费选项
+
+#### 通义万相（阿里云）
+
+1. 注册 [阿里云百炼平台](https://bailian.console.aliyun.com/)
+2. 获取 API Key
+3. 在应用设置中输入 Key
+
+#### 文心一格（百度）
+
+1. 注册 [百度智能云](https://cloud.baidu.com/)
+2. 创建应用获取 API Key
+3. 在应用设置中输入 Key
+
+### 自建代理服务
+
+如果已有其他AI服务的API Key，可以自建代理服务器：
+
+**Vercel Serverless Function 示例**:
+
+```javascript
+// api/generate.js
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const { prompt, size } = req.body;
+    const apiKey = req.headers['x-api-key'];
+
+    // 转发到你选择的AI服务
+    // ...
+
+    res.status(200).json({ imageUrl: resultUrl });
+}
+```
+
+## 移动端使用
+
+### 支持的平台
+- ✅ Android Chrome
+- ✅ iOS Safari 17+
+- ✅ 微信浏览器（部分功能）
+- ❌ iOS Safari < 17（AR功能受限）
+
+### 使用建议
+1. 确保在 HTTPS 环境下访问
+2. 允许浏览器访问摄像头
+3. 打印或显示 AR 标记图案
+4. 将标记对准摄像头进行识别
+
+### AR标记
+
+获取 Hiro 标记图案：访问 [AR.js 标记页面](https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png)
+
+## 项目结构
+
+```
+neon-hk/
+├── index.html              # 主入口
+├── vercel.json            # Vercel配置
+├── js/
+│   ├── config.js          # 配置文件
+│   ├── utils.js           # 工具函数
+│   ├── ar-manager.js      # AR管理器
+│   ├── neon-pipe.js       # 霓虹灯管道生成器
+│   ├── ai-service.js      # AI服务封装
+│   └── main.js            # 主应用逻辑
+├── assets/
+│   ├── fonts/             # 字体文件
+│   └── markers/           # AR标记图案
+└── README.md
+```
+
+## 配置说明
+
+### 颜色配置
+
+在 `js/config.js` 中修改 `neonColors`:
+
+```javascript
+neonColors: {
+    magenta: { hex: 0xff00ff, name: '洋红' },
+    cyan: { hex: 0x00ffff, name: '青色' },
+    // 添加更多颜色...
+}
+```
+
+### 性能配置
+
+低端设备自动降级：
+- 减少管道分段数
+- 降低曲线采样密度
+- 限制字数（最多10字）
+
+## 常见问题
+
+### Q: AR无法启动？
+A: 确保使用HTTPS访问，并允许摄像头权限。
+
+### Q: AI生成失败？
+A: 检查API Key配置，或尝试使用Hugging Face免费服务。
+
+### Q: 管道文字显示不正确？
+A: 部分复杂字符可能显示不完整，这是OpenType.js解析限制。
+
+### Q: 移动端性能卡顿？
+A: 尝试减少文字长度，或在设置中降低渲染质量。
 
 ## 关于香港霓虹灯文化
 
-香港的霓虹灯招牌是城市景观的重要组成部分，代表了香港独特的视觉文化。随着LED技术的普及和城市规划的变化，传统霓虹灯招牌正在逐渐消失。这个项目旨在通过现代技术保存和传承这一文化遗产。
+香港的霓虹灯招牌是城市景观的重要组成部分，代表了香港独特的视觉文化。随着LED技术的普及和城市规划的变化，传统霓虹灯招牌正在逐渐消失。本项目通过现代技术保存和传承这一文化遗产。
 
 ## 许可证
 
-MIT
+MIT License
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 致谢
+
+- [AR.js](https://github.com/AR-js-org/AR.js) - WebAR 库
+- [Three.js](https://threejs.org/) - 3D 渲染库
+- [OpenType.js](https://opentype.js.org/) - 字体解析库

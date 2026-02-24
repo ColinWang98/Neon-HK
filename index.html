@@ -2,95 +2,736 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>香港霓虹灯AR体验</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- 引入中文字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>香港霓虹灯 AR</title>
+
+    <!-- 中文字体：Noto Sans SC (类似微软雅黑) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- 样式 -->
     <style>
-        @font-face {
-            font-family: 'KaiTi';
-            src: local('KaiTi'), local('楷体'), local('STKaiti');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
-        @font-face {
-            font-family: 'STKaiti';
-            src: local('STKaiti'), local('华文楷体'), local('KaiTi');
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0a0a0a 100%);
+            color: #fff;
         }
-        @font-face {
-            font-family: 'LiSu';
-            src: local('LiSu'), local('隶书'), local('STLiti');
+
+        /* 屏幕容器 */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-        @font-face {
-            font-family: 'SimSun';
-            src: local('SimSun'), local('宋体'), local('NSimSun');
+
+        .screen.active {
+            display: flex;
+            opacity: 1;
+            z-index: 10;
+        }
+
+        /* 开始屏幕 */
+        #start-screen {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .logo {
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #ff00ff, #00ffff, #ff00ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s linear infinite;
+            text-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
+
+        @keyframes shimmer {
+            to { background-position: 200% center; }
+        }
+
+        .subtitle {
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            color: #888;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        /* 模式选择器 */
+        .mode-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .mode-btn {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 25px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 0, 255, 0.3);
+            border-radius: 16px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .mode-btn:hover, .mode-btn:active {
+            background: rgba(255, 0, 255, 0.1);
+            border-color: #ff00ff;
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.3);
+        }
+
+        .mode-icon {
+            font-size: 2.5rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 0, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        .mode-info {
+            flex: 1;
+            text-align: left;
+        }
+
+        .mode-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .mode-desc {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* 设置按钮 */
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        /* 通用屏幕样式 */
+        .screen-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .screen-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* 输入屏幕 */
+        .input-screen {
+            flex-direction: column;
+            padding: 80px 20px 20px;
+            align-items: center;
+        }
+
+        .input-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-label {
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 0, 255, 0.3);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: #ff00ff;
+        }
+
+        .input-field::placeholder {
+            color: #555;
+        }
+
+        textarea.input-field {
+            min-height: 100px;
+            resize: none;
+        }
+
+        /* 颜色选择器 */
+        .color-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .color-btn.selected {
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+
+        /* 风格预设 */
+        .style-presets {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .style-btn {
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 0, 255, 0.3);
+            border-radius: 20px;
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .style-btn.selected {
+            background: rgba(255, 0, 255, 0.2);
+            border-color: #ff00ff;
+        }
+
+        /* 主按钮 */
+        .primary-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #ff00ff, #00ffff);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .primary-btn:hover, .primary-btn:active {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.5);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 预览屏幕 */
+        .preview-screen {
+            flex-direction: column;
+            padding: 80px 20px 20px;
+            align-items: center;
+        }
+
+        .preview-container {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 16/9;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 0, 255, 0.3);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .preview-container img, .preview-container canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .preview-actions .primary-btn {
+            flex: 1;
+            margin-top: 0;
+        }
+
+        .secondary-btn {
+            flex: 1;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .secondary-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* AR屏幕 */
+        #ar-screen {
+            background: transparent;
+        }
+
+        #ar-screen.active {
+            background: #000;
+        }
+
+        /* AR容器 */
+        #ar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* AR控制面板 */
+        .ar-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+            z-index: 100;
+        }
+
+        .ar-controls-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .ar-btn {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .ar-btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 0, 255, 0.3);
+        }
+
+        /* 设置模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 25px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .modal-section {
+            margin-bottom: 25px;
+        }
+
+        .modal-section-title {
+            font-size: 1rem;
+            color: #888;
+            margin-bottom: 12px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ff00ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 提示信息 */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.9rem;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* 底部安全区域适配 */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .ar-controls {
+                padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            }
+            .input-screen {
+                padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            }
         }
     </style>
 </head>
-    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/loaders/FontLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/geometries/TextGeometry.js"></script>
-    <!-- OpenType.js: 用于解析中文TTF/OTF并生成挤出形状 -->
-    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
-</head>
 <body>
-    <div class="container">
-        <div id="start-screen" class="screen active">
-            <h1>香港霓虹灯AR体验</h1>
-            <p>体验香港传统霓虹灯文化，创建您自己的霓虹灯招牌</p>
-            <div class="input-container">
-                <input type="text" id="neon-text" placeholder="输入您想要的文字" maxlength="20">
-                
-                <div class="font-selector">
-                    <label for="fontSelect">选择字体：</label>
-                    <select id="fontSelect">
-                        <option value="KaiTi">楷书</option>
-                        <option value="STKaiti">北魏楷书</option>
-                        <option value="LiSu">隶书</option>
-                        <option value="SimSun">宋体</option>
-                    </select>
+    <!-- 开始屏幕 -->
+    <div id="start-screen" class="screen active">
+        <button class="settings-btn" id="settings-trigger">⚙️</button>
+
+        <div class="logo">香港霓虹灯 AR</div>
+        <div class="subtitle">沉浸式 AR 体验</div>
+
+        <div class="mode-selector">
+            <button class="mode-btn" data-mode="neon">
+                <div class="mode-icon">💡</div>
+                <div class="mode-info">
+                    <div class="mode-title">霓虹灯文字</div>
+                    <div class="mode-desc">输入文字，生成发光霓虹灯</div>
                 </div>
-                
-                <button id="generate-btn">生成霓虹灯</button>
-            </div>
+            </button>
+
+            <button class="mode-btn" data-mode="graffiti">
+                <div class="mode-icon">🎨</div>
+                <div class="mode-info">
+                    <div class="mode-title">AI涂鸦</div>
+                    <div class="mode-desc">AI生成图片，投射到墙面</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 霓虹灯输入屏幕 -->
+    <div id="neon-input" class="screen input-screen">
+        <div class="screen-header">
+            <button class="back-btn" data-screen="start-screen">←</button>
+            <div class="screen-title">霓虹灯文字</div>
+            <div style="width: 40px;"></div>
         </div>
 
-        <div id="preview-screen" class="screen">
-            <div class="preview-container">
-                <div id="neon-preview"></div>
-                <div class="buttons">
-                    <button id="back-btn">返回</button>
-                    <button id="ar-btn">进入AR</button>
+        <div class="input-container">
+            <div class="input-group">
+                <label class="input-label">输入文字</label>
+                <input type="text" class="input-field" id="neon-text" placeholder="输入文字（最多10字）" maxlength="10">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">选择颜色</label>
+                <div class="color-selector" id="neon-colors">
+                    <!-- 动态生成 -->
                 </div>
             </div>
+
+            <button class="primary-btn" id="neon-generate-btn">生成霓虹灯</button>
+        </div>
+    </div>
+
+    <!-- 霓虹灯预览屏幕 -->
+    <div id="neon-preview" class="screen preview-screen">
+        <div class="screen-header">
+            <button class="back-btn" data-screen="neon-input">←</button>
+            <div class="screen-title">预览</div>
+            <div style="width: 40px;"></div>
         </div>
 
-        <div id="ar-screen" class="screen">
-            <a-scene id="ar-scene" 
-                     embedded 
-                     arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-                     color-space="sRGB" 
-                     renderer="alpha: true, colorManagement: true, physicallyCorrectLights: true" 
-                     vr-mode-ui="enabled: false" 
-                     device-orientation-permission-ui="enabled: false"
-                     background="color: transparent">
-                
-                <a-camera gps-camera rotation-reader look-controls="enabled: true" cursor="rayOrigin: mouse"></a-camera>
-                
-                <a-entity id="neon-model"></a-entity>
-                
-                <a-entity light="type: ambient; color: #BBB; intensity: 0.8"></a-entity>
-                <a-entity light="type: directional; color: #FFF; intensity: 1.2" position="-0.5 1 1"></a-entity>
-            </a-scene>
-            
-            <div class="ar-ui">
-                <button id="exit-ar-btn">退出AR</button>
-                <button id="take-photo-btn">拍照</button>
+        <div class="preview-container" id="neon-preview-container">
+            <canvas id="neon-canvas"></canvas>
+        </div>
+
+        <div class="preview-actions">
+            <button class="secondary-btn" id="neon-back-btn">返回</button>
+            <button class="primary-btn" id="neon-ar-btn">进入AR</button>
+        </div>
+    </div>
+
+    <!-- AI涂鸦输入屏幕 -->
+    <div id="graffiti-input" class="screen input-screen">
+        <div class="screen-header">
+            <button class="back-btn" data-screen="start-screen">←</button>
+            <div class="screen-title">AI涂鸦</div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-group">
+                <label class="input-label">描述你想要的涂鸦</label>
+                <textarea class="input-field" id="graffiti-prompt" placeholder="例如：一只发光的凤凰，霓虹灯风格，赛博朋克..."></textarea>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">风格预设（可选）</label>
+                <div class="style-presets" id="graffiti-styles">
+                    <button class="style-btn selected" data-style="">无</button>
+                    <button class="style-btn" data-style="cyberpunk">赛博朋克</button>
+                    <button class="style-btn" data-style="traditional">传统港式</button>
+                    <button class="style-btn" data-style="abstract">抽象艺术</button>
+                    <button class="style-btn" data-style="minimal">极简</button>
+                </div>
+            </div>
+
+            <button class="primary-btn" id="graffiti-generate-btn">AI生成</button>
+        </div>
+    </div>
+
+    <!-- AI涂鸦预览屏幕 -->
+    <div id="graffiti-preview" class="screen preview-screen">
+        <div class="screen-header">
+            <button class="back-btn" data-screen="graffiti-input">←</button>
+            <div class="screen-title">预览</div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="preview-container" id="graffiti-preview-container">
+            <!-- 动态加载 -->
+        </div>
+
+        <div class="preview-actions">
+            <button class="secondary-btn" id="graffiti-regenerate-btn">重新生成</button>
+            <button class="primary-btn" id="graffiti-ar-btn">进入AR</button>
+        </div>
+    </div>
+
+    <!-- AR屏幕 -->
+    <div id="ar-screen" class="screen">
+        <div id="ar-container"></div>
+
+        <div class="screen-header">
+            <button class="back-btn" id="ar-exit-btn">←</button>
+            <div class="screen-title">AR模式</div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="ar-controls">
+            <div class="ar-controls-row">
+                <button class="ar-btn" id="ar-capture-btn" title="拍照">📷</button>
+                <button class="ar-btn" id="ar-place-btn" title="放置">📍</button>
+                <button class="ar-btn" id="ar-reset-btn" title="重置">🔄</button>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- 设置模态框 -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="settings-close">✕</button>
+
+            <div class="modal-title">设置</div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">AI服务配置</div>
+
+                <div class="input-group">
+                    <label class="input-label">服务提供商</label>
+                    <select class="input-field" id="ai-provider-select">
+                        <option value="USER_PROVIDED">用户自带API Key</option>
+                        <option value="HUGGINGFACE">Hugging Face（免费）</option>
+                        <option value="ALIYUN">通义万相</option>
+                        <option value="BAIDU">文心一格</option>
+                    </select>
+                </div>
+
+                <div class="input-group" id="api-key-group" style="margin-top: 15px;">
+                    <label class="input-label">API Key</label>
+                    <input type="password" class="input-field" id="api-key-input" placeholder="输入你的API Key">
+                    <small style="color: #666; font-size: 0.8rem; margin-top: 5px;">Key将安全存储在本地</small>
+                </div>
+            </div>
+
+            <div class="modal-section">
+                <div class="modal-section-title">关于</div>
+                <p style="color: #888; font-size: 0.9rem; line-height: 1.6;">
+                    香港霓虹灯 AR 2.0<br>
+                    移动端友好的沉浸式AR体验<br>
+                    <br>
+                    支持平台：GitHub Pages / Vercel
+                </p>
+            </div>
+
+            <button class="primary-btn" id="settings-save-btn">保存</button>
+        </div>
+    </div>
+
+    <!-- 提示信息 -->
+    <div class="toast" id="toast"></div>
+
+    <!-- 依赖脚本 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.5/build/ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/opentype.min.js"></script>
+
+    <!-- 应用脚本 -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/ar-manager.js"></script>
+    <script src="js/neon-pipe.js"></script>
+    <script src="js/ai-service.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
