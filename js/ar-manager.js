@@ -73,13 +73,23 @@ class ARManager {
      * 初始化AR Toolkit
      */
     async initARToolkit(container) {
-        // 检查 THREEx 是否已加载
+        // 检查 THREEx 是否已加载，如果未加载则等待
         if (typeof THREEx === 'undefined') {
-            throw new Error('AR.js 库未加载。请确保已正确引入 AR.js CDN。');
+            console.warn('AR.js 库尚未加载，等待加载...');
+            // 等待最多 5 秒
+            let waited = 0;
+            while (typeof THREEx === 'undefined' && waited < 5000) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                waited += 100;
+            }
+            if (typeof THREEx === 'undefined') {
+                throw new Error('AR.js 库加载失败。请检查网络连接或刷新页面重试。');
+            }
         }
 
         // 设置 AR.js 数据文件的基础 URL
-        const arBaseURL = 'https://cdn.jsdelivr.net/npm/ar.js@3.4.5/data/';
+        // 使用 GitHub Pages CDN 匹配新的 AR.js 源
+        const arBaseURL = 'https://raw.githack.com/AR-js-org/AR.js/master/three.js/data/';
 
         // 创建视频源
         this.arToolkitSource = new THREEx.ArToolkitSource({

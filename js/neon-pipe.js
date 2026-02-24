@@ -262,7 +262,7 @@ class NeonPipeGenerator {
             metalness: 0,
             roughness: 0.1,
             transmission: 0.95,
-            thickness: glassRadius - pipeRadius,
+            // thickness 属性在 Three.js r128 中不支持，已移除
             ior: 1.5,
             transparent: true,
             opacity: 0.3,
