@@ -176,6 +176,14 @@ class NeonARApp {
             this.arManager.reset();
         });
 
+        // 下载 Hiro 标记按钮
+        const downloadMarkerBtn = document.getElementById('download-marker-btn');
+        if (downloadMarkerBtn) {
+            downloadMarkerBtn.addEventListener('click', () => {
+                this.downloadHiroMarker();
+            });
+        }
+
         // 设置模态框
         this.elements.settingsTrigger.addEventListener('click', () => {
             this.openSettings();
@@ -491,6 +499,38 @@ class NeonARApp {
         showToast('设置已保存');
         this.closeSettings();
         vibrate();
+    }
+
+    /**
+     * 下载 Hiro 标记图片
+     */
+    downloadHiroMarker() {
+        // 使用 GitHub 上的 Hiro 标记图片
+        const markerUrl = 'https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png';
+
+        // 创建一个隐藏的下载链接
+        fetch(markerUrl)
+            .then(response => response.blob())
+            .then(blob => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'hiro-marker.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                showToast('Hiro 标记已下载，可打印后使用');
+                vibrate();
+            })
+            .catch(error => {
+                console.error('下载标记失败:', error);
+
+                // 备用方案：直接在新标签页打开图片
+                window.open(markerUrl, '_blank');
+                showToast('已在新标签页打开标记图片，请长按保存');
+            });
     }
 }
 
