@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>手势体素化 - 偏移截图与长按删除</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #222; }
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    /* 视频和 Canvas 保持镜像，让操作符合直觉 */
+    #video, #overlay {
+      position: absolute;
+      transform: scaleX(-1); 
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <video id="video" playsinline autoplay muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+
+    // --- 状态变量 ---
+    let voxelObjects = []; 
+    let draggedObject = null; 
+    let isRightPinching = false;
+
+    // 删除功能的计时器
+    let deleteTimer = null;
+    let deleteStartTime = 0;
+    let objectToDelete = null; // 当前正在被“长按”准备删除的对象
+
+    // --- 初始化 ---
+    async function initCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1280, height: 720 }
+      });
+      video.srcObject = stream;
+      return new Promise(resolve => {
+        video.onloadedmetadata = () => {
+          video.play();
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          video.style.width = canvas.width + 'px';
+          video.style.height = canvas.height + 'px';
+          resolve();
+        };
+      });
+    }
+
+    async function initHands() {
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+      hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.5
+      });
+      hands.onResults(onResults);
+
+      new Camera(video, {
+        onFrame: async () => await hands.send({ image: video }),
+        width: video.videoWidth,
+        height: video.videoHeight
+      }).start();
+    }
+
+    // --- 核心循环 ---
+    function onResults(results) {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const handStates = { left: null, right: null };
+
+      if (results.multiHandLandmarks && results.multiHandedness) {
+        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+          const landmarks = results.multiHandLandmarks[i];
+          let label = results.multiHandedness[i].label.toLowerCase();
+          
+          // 修正镜像反转导致的左右手标签错误
+          label = (label === 'left') ? 'right' : 'left';
+
+          const thumbTip = landmarks[4];
+          const indexTip = landmarks[8];
+          const wrist = landmarks[0]; // 手腕点，用于计算方向
+
+          const p1 = { x: thumbTip.x * canvas.width, y: thumbTip.y * canvas.height };
+          const p2 = { x: indexTip.x * canvas.width, y: indexTip.y * canvas.height };
+          
+          // 原始捏合中心
+          const pinchX = (p1.x + p2.x) / 2;
+          const pinchY = (p1.y + p2.y) / 2;
+
+          // *** 关键修改：计算截图偏移点 (Target Point) ***
+          // 我们利用从手腕到指尖的向量，向外延伸一段距离
+          const wristX = wrist.x * canvas.width;
+          const wristY = wrist.y * canvas.height;
+          
+          // 向量：手腕 -> 捏合中心
+          const dirX = pinchX - wristX;
+          const dirY = pinchY - wristY;
+          const len = Math.hypot(dirX, dirY);
+          
+          // 归一化后延伸 100 像素（可调整 offsetDistance）
+          const offsetDistance = 100; 
+          const targetX = pinchX + (dirX / len) * offsetDistance;
+          const targetY = pinchY + (dirY / len) * offsetDistance;
+
+          const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+          const isPinching = dist < 50;
+
+          handStates[label] = {
+            pinch: isPinching,
+            // 实际捏合点（用于判断拖动）
+            pinchPos: { x: pinchX, y: pinchY },
+            // 目标截图点（绿点位置，用于截图）
+            targetPos: { x: targetX, y: targetY },
+            landmarks: [p1, p2]
+          };
+        }
+      }
+
+      handleGestures(handStates);
+      drawVoxelObjects();
+      drawUI(handStates); // 绘制绿点、倒计时圆环等
+      
+      ctx.restore();
+    }
+
+    function handleGestures(states) {
+      const { left, right } = states;
+
+      // --- 右手逻辑：截图 ---
+      if (right && right.pinch && !isRightPinching) {
+        // 使用偏移后的 targetPos 进行截图，避免截到手指
+        createNewVoxelObject(right.targetPos.x, right.targetPos.y);
+      }
+      isRightPinching = right ? right.pinch : false;
+
+      // --- 左手逻辑：拖动与删除 ---
+      // 先重置删除状态，除非下面重新确认
+      let isDeleting = false;
+
+      if (left && left.pinch) {
+        // 1. 如果还没开始拖动，检查是否捏住了某个物体
+        if (!draggedObject) {
+          // 优先检查是否在物体上
+          const hitObject = findObjectAt(left.pinchPos);
+          
+          if (hitObject) {
+            draggedObject = hitObject;
+            // 记录拖动偏差
+            draggedObject.offsetX = left.pinchPos.x - hitObject.x;
+            draggedObject.offsetY = left.pinchPos.y - hitObject.y;
+            
+            // **长按删除逻辑开始**
+            // 只有当刚开始捏住一个物体时，我们才开始计时
+            if (objectToDelete !== hitObject) {
+              objectToDelete = hitObject;
+              deleteStartTime = Date.now();
+            }
+            isDeleting = true;
+          }
+        } else {
+          // 2. 正在拖动中
+          draggedObject.x = left.pinchPos.x - draggedObject.offsetX;
+          draggedObject.y = left.pinchPos.y - draggedObject.offsetY;
+          
+          // 只要还捏着这个物体，就保持删除计时状态
+          if (objectToDelete === draggedObject) {
+             isDeleting = true;
+          }
+        }
+      } else {
+        // 松开手指
+        draggedObject = null;
+        objectToDelete = null;
+        deleteStartTime = 0;
+      }
+
+      // 检查是否达到删除时间 (5000ms)
+      if (isDeleting && objectToDelete) {
+        const elapsed = Date.now() - deleteStartTime;
+        if (elapsed > 5000) {
+          // 移除物体
+          voxelObjects = voxelObjects.filter(obj => obj !== objectToDelete);
+          // 重置状态
+          objectToDelete = null;
+          draggedObject = null; 
+          deleteStartTime = 0;
+        }
+      } else {
+        // 如果中途松开或移开，重置计时
+        if (!isDeleting) {
+            deleteStartTime = 0;
+            objectToDelete = null;
+        }
+      }
+    }
+
+    // 查找点下的物体（从上层往下找）
+    function findObjectAt(point) {
+      for (let i = voxelObjects.length - 1; i >= 0; i--) {
+        const obj = voxelObjects[i];
+        if (isPointInObject(point, obj)) {
+          return obj;
+        }
+      }
+      return null;
+    }
+
+    function createNewVoxelObject(cx, cy) {
+      const size = 150; 
+      const grid = 16;  
+      
+      // 边界检查：防止截图超出画面报错
+      const half = size / 2;
+      if (cx - half < 0 || cx + half > video.videoWidth || cy - half < 0 || cy + half > video.videoHeight) {
+          // 如果太靠近边缘，就不截图了，或者可以做钳制
+          return;
+      }
+
+      const newVoxel = {
+        id: Date.now(),
+        x: cx,
+        y: cy,
+        size: size,
+        grid: grid,
+        blocks: captureAndVoxelize(cx, cy, size, grid),
+      };
+      voxelObjects.push(newVoxel);
+    }
+
+    function captureAndVoxelize(cx, cy, size, grid) {
+      const half = size / 2;
+      const temp = document.createElement('canvas');
+      temp.width = size; temp.height = size;
+      const tctx = temp.getContext('2d');
+
+      // 使用原始坐标截图
+      tctx.drawImage(video, cx - half, cy - half, size, size, 0, 0, size, size);
+
+      const small = document.createElement('canvas');
+      small.width = grid; small.height = grid;
+      const sctx = small.getContext('2d');
+      sctx.imageSmoothingEnabled = false;
+      sctx.drawImage(temp, 0, 0, grid, grid);
+
+      const imgData = sctx.getImageData(0, 0, grid, grid).data;
+      const blocks = [];
+      for (let y = 0; y < grid; y++) {
+        for (let x = 0; x < grid; x++) {
+          const i = (y * grid + x) * 4;
+          if (imgData[i + 3] > 128) { 
+            blocks.push({ x, y, color: `rgb(${imgData[i]},${imgData[i+1]},${imgData[i+2]})` });
+          }
+        }
+      }
+      return blocks;
+    }
+
+    function drawVoxelObjects() {
+      voxelObjects.forEach(obj => {
+        const blockSize = obj.size / obj.grid;
+        const originX = obj.x - (obj.size / 2);
+        const originY = obj.y - (obj.size / 2);
+
+        obj.blocks.forEach(b => {
+          ctx.fillStyle = b.color;
+          ctx.fillRect(originX + b.x * blockSize, originY + b.y * blockSize, blockSize, blockSize);
+        });
+        
+        // 绘制边框
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(originX, originY, obj.size, obj.size);
+      });
+    }
+
+    function isPointInObject(point, obj) {
+      const half = obj.size / 2;
+      return point.x >= obj.x - half && point.x <= obj.x + half &&
+             point.y >= obj.y - half && point.y <= obj.y + half;
+    }
+
+    // 绘制 UI（绿点、进度圈等）
+    function drawUI(states) {
+      // 1. 绘制右手截图目标点（绿点）
+      if (states.right) {
+        const target = states.right.targetPos;
+        const pinch = states.right.pinchPos;
+
+        // 画一条线连接指尖和目标点，方便用户理解偏移
+        ctx.beginPath();
+        ctx.moveTo(pinch.x, pinch.y);
+        ctx.lineTo(target.x, target.y);
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 绿点：空心圆，捏合时变实心
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = states.right.pinch ? 'rgba(0, 255, 0, 1)' : 'rgba(0, 255, 0, 0.3)';
+        ctx.strokeStyle = 'lime';
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // 2. 绘制左手拖动/删除进度
+      if (states.left && objectToDelete) {
+        const pinch = states.left.pinchPos;
+        const elapsed = Date.now() - deleteStartTime;
+        const progress = Math.min(elapsed / 3000, 1); // 0.0 -> 1.0
+
+        if (progress > 0) {
+          // 在左手位置画一个倒计时红圈
+          ctx.beginPath();
+          ctx.arc(pinch.x, pinch.y, 25, -Math.PI/2, -Math.PI/2 + progress * Math.PI * 2);
+          ctx.strokeStyle = 'red';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          
+          // 如果快删除了，给个文字提示
+          if (progress > 0.8) {
+            ctx.fillStyle = 'red';
+            ctx.font = '16px Arial';
+            ctx.fillText("Deleting...", pinch.x + 30, pinch.y);
+          }
+        }
+      }
+      
+      // 调试用的指尖点
+      ['left', 'right'].forEach(side => {
+        if (states[side]) {
+          ctx.fillStyle = side === 'left' ? 'red' : 'cyan';
+          states[side].landmarks.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      });
+    }
+
+    (async () => {
+      await initCamera();
+      await initHands();
+    })();
+  </script>
+</body>
+</html>

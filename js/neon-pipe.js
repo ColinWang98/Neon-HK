@@ -6,6 +6,7 @@
 class NeonPipeGenerator {
     constructor() {
         this.font = null;
+        this.useCanvasFallback = false;
         this.config = APP_CONFIG.neon;
     }
 
@@ -14,23 +15,46 @@ class NeonPipeGenerator {
      * @param {string} fontPath - 字体文件路径
      */
     async loadFont(fontPath = null) {
-        // 使用配置的字体路径，或在线CDN
-        const path = fontPath || APP_CONFIG.fonts.chineseFontUrl || APP_CONFIG.fonts.chineseFontPath;
+        // 只尝试本地字体路径，不使用在线CDN（避免CORS问题）
+        const path = fontPath || APP_CONFIG.fonts.chineseFontPath;
+
         return new Promise((resolve, reject) => {
             if (typeof opentype === 'undefined') {
-                reject(new Error('OpenType.js未加载'));
+                console.warn('OpenType.js未加载，使用Canvas降级方案');
+                this.useCanvasFallback = true;
+                resolve(null);
                 return;
             }
 
-            opentype.load(fontPath, (err, font) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    this.font = font;
-                    console.log('字体加载成功:', font.names.fontFamily);
-                    resolve(font);
-                }
-            });
+            // 先检查文件是否存在
+            fetch(path)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('字体文件不存在');
+                    }
+                    // 文件存在，加载字体
+                    return new Promise((res, rej) => {
+                        opentype.load(path, (err, font) => {
+                            if (err) {
+                                rej(err);
+                            } else {
+                                res(font);
+                            }
+                        });
+                    });
+                })
+                .then(font => {
+                    if (font) {
+                        this.font = font;
+                        console.log('字体加载成功:', font.names.fontFamily);
+                        resolve(font);
+                    }
+                })
+                .catch(err => {
+                    console.warn('字体加载失败，使用Canvas降级方案:', err.message);
+                    this.useCanvasFallback = true;
+                    resolve(null); // 不reject，而是使用降级方案
+                });
         });
     }
 
@@ -51,6 +75,12 @@ class NeonPipeGenerator {
         // 确保字体已加载
         if (!this.font) {
             await this.loadFont();
+        }
+
+        // 如果字体不可用，直接使用Canvas降级方案
+        if (this.useCanvasFallback || !this.font) {
+            console.log('使用Canvas降级方案生成文字');
+            return this.createCanvasFallback(text, color);
         }
 
         // 创建组

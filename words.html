@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>语音文字雨 v3.0 (极速版)</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* 隐藏原始视频，只显示Canvas */
+        #webcam { display: none; }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* 界面UI层 */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .status-panel {
+            background: rgba(0, 0, 0, 0.65);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            max-width: 320px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        h1 { margin: 0 0 10px 0; font-size: 18px; color: #00ff9d; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .live-indicator { width: 10px; height: 10px; background: #ff4757; border-radius: 50%; animation: pulse 1s infinite; }
+        
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; color: #ddd; }
+        .highlight { color: #fff; font-weight: bold; }
+        .sub-text { font-size: 12px; color: #aaa; margin-top: 5px; line-height: 1.4; }
+
+        .controls { margin-top: 15px; pointer-events: auto; display: flex; gap: 10px; }
+        button {
+            background: #333; color: white; border: 1px solid #666;
+            padding: 6px 12px; cursor: pointer; border-radius: 6px; font-size: 12px;
+            transition: all 0.2s;
+        }
+        button:hover { background: #555; border-color: #888; }
+        button:active { transform: translateY(1px); }
+
+        /* 闭眼警告动画 */
+        #eye-progress-container {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            text-align: center;
+            pointer-events: none;
+        }
+        .circular-chart { width: 160px; height: 160px; }
+        .circle-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3; }
+        .circle { 
+            fill: none; stroke-width: 4; stroke: #ff4757; stroke-linecap: round; 
+            transition: stroke-dashoffset 0.1s linear;
+            filter: drop-shadow(0 0 5px #ff4757);
+        }
+        .warning-text {
+            color: #ff4757; font-size: 24px; font-weight: 900; margin-top: 15px;
+            text-transform: uppercase; letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255, 71, 87, 0.5);
+        }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+</head>
+<body>
+
+    <video id="webcam" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="status-panel">
+            <h1><div class="live-indicator"></div> 语音文字雨 Pro</h1>
+            <div class="info-row">
+                <span>系统状态:</span>
+                <span id="status-text" class="highlight">初始化中...</span>
+            </div>
+            <div class="info-row">
+                <span>当前识别:</span>
+                <span id="speech-result" style="color: #ffd700; max-width: 150px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">...</span>
+            </div>
+            <div class="sub-text">
+                🗣️ 说话：文字极速掉落
+            </div>
+            <div class="controls">
+                <button onclick="manualDrop()">🧪 测试掉落</button>
+                <button onclick="resetWorld()">🗑️ 清空屏幕</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="eye-progress-container">
+        <svg viewBox="0 0 36 36" class="circular-chart">
+            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path id="progress-circle" class="circle" stroke-dasharray="100, 100" stroke-dashoffset="100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        </svg>
+        <div class="warning-text">即将爆炸</div>
+    </div>
+
+    <script type="module">
+        import { FilesetResolver, SelfieSegmentation } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/+esm";
+
+        const CONFIG = {
+            EXPLOSION_TIME: 5000,
+            BLINK_THRESHOLD: 0.60, // 闭眼阈值，建议0.55-0.65之间
+            GRAVITY: 1.5,          // 重力加速度，越大掉得越快
+            FONT_SIZE_MIN: 30,
+            FONT_SIZE_MAX: 55
+        };
+
+        let engine, world, runner;
+        let canvas, ctx, video, selfieSegmentation;
+        let lastVideoTime = -1;
+        let textBodies = [];
+        let recognition;
+        let wordFrequencies = {}; // 新增：用于追踪词频
+        let staticPersonBodies = []; // 新增：用于存储人形边界
+        let tempCanvas, tempCtx; // 新增：用于处理图像
+
+        // --- 初始化 ---
+        async function init() {
+            const status = document.getElementById('status-text');
+            video = document.getElementById('webcam');
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+
+            // 创建一个临时画布用于处理图像
+            tempCanvas = document.createElement('canvas');
+            tempCtx = tempCanvas.getContext('2d');
+
+            initPhysics();
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // 1. 摄像头
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 360, facingMode: "user" }, audio: false 
+                });
+                video.srcObject = stream;
+                await new Promise(r => video.onloadedmetadata = r);
+                video.play();
+            } catch (err) {
+                status.innerText = "❌ 摄像头被拒绝";
+                status.style.color = "red";
+                return;
+            }
+
+            // 2. MediaPipe Selfie Segmentation 模型
+            try {
+                status.innerText = "加载 AI 模型...";
+                const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+                selfieSegmentation = await SelfieSegmentation.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/selfie_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite`,
+                        delegate: "GPU"
+                    },
+                    runningMode: "VIDEO",
+                    outputCategoryMask: true,
+                });
+                status.innerText = "✅ 系统就绪";
+                status.style.color = "#00ff9d";
+            } catch (err) {
+                console.error(err);
+                status.innerText = "❌ AI 加载失败";
+            }
+
+            // 3. 语音识别 (极速版)
+            initFastSpeech();
+
+            // 4. 循环
+            requestAnimationFrame(loop);
+        }
+
+        // --- 物理引擎 ---
+        function initPhysics() {
+            const Engine = Matter.Engine, World = Matter.World, Runner = Matter.Runner;
+            engine = Engine.create();
+            world = engine.world;
+            engine.gravity.y = CONFIG.GRAVITY;
+            
+            createStaticBoundaries(); // 创建地面
+
+            runner = Runner.create();
+            Runner.run(runner, engine);
+        }
+
+        // 创建静态边界（如地面）
+        function createStaticBoundaries() {
+            // 移除旧的地面，以防万一
+            const oldGround = world.bodies.find(b => b.label === 'ground');
+            if(oldGround) Matter.World.remove(world, oldGround);
+
+            const w = window.innerWidth, h = window.innerHeight;
+            const ground = Matter.Bodies.rectangle(w/2, h + 50, w, 100, { 
+                isStatic: true, 
+                label: 'ground',
+                render: { visible: false } 
+            });
+            Matter.World.add(world, [ground]);
+        }
+
+        window.addTextBody = function(text) {
+            // 更新词频
+            wordFrequencies[text] = (wordFrequencies[text] || 0) + 1;
+            const frequency = wordFrequencies[text];
+
+            const fontSize = CONFIG.FONT_SIZE_MIN + Math.random() * (CONFIG.FONT_SIZE_MAX - CONFIG.FONT_SIZE_MIN);
+            ctx.font = `bold ${fontSize}px Arial`;
+            const metrics = ctx.measureText(text);
+            const width = metrics.width + 14;
+            const height = fontSize + 6;
+
+            const x = Math.random() * (canvas.width - 100) + 50;
+            const y = -50 - Math.random() * 50;
+
+            const body = Matter.Bodies.rectangle(x, y, width, height, {
+                restitution: 0.4,
+                friction: 0.3,
+                density: 0.04,
+                angle: (Math.random() - 0.5) * 0.5
+            });
+
+            body.renderText = text;
+            
+            // 根据词频决定颜色
+            if (frequency <= 2) { // 第一次或第二次出现
+                body.renderBgColor = '#FFFFFF';
+                body.renderTextColor = '#000000';
+            } else {
+                // 多次出现后，开始变彩色
+                const hue = (text.charCodeAt(0) * 137.5) % 360; // 基于文字给一个固定的色相
+                const saturation = Math.min(30 + frequency * 5, 100);
+                const lightness = Math.max(70 - frequency * 2, 50);
+                body.renderBgColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                body.renderTextColor = '#FFFFFF';
+            }
+
+            body.renderFontSize = fontSize;
+            
+            Matter.World.add(world, body);
+            textBodies.push(body);
+        }
+
+        // --- 极速语音识别核心逻辑 (v2.0 优化版) ---
+        let lastTranscript = ''; // 持续追踪上一次的识别结果
+        function initFastSpeech() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return alert("请使用 Chrome 浏览器");
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'zh-CN';
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                // 遍历所有结果，拼接成完整句子
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                
+                const currentTranscript = finalTranscript || interimTranscript;
+                document.getElementById('speech-result').innerText = currentTranscript;
+
+                // 找出新增的文本
+                if (currentTranscript.length > lastTranscript.length) {
+                    const newContent = currentTranscript.substring(lastTranscript.length);
+                    processAndDrop(newContent);
+                }
+                
+                lastTranscript = currentTranscript;
+
+                // 如果一句话结束了，就清空记录，避免下次对比出错
+                if (finalTranscript) {
+                    lastTranscript = '';
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("语音识别错误:", event.error);
+            };
+
+            recognition.onend = () => {
+                // 意外结束后自动重启
+                try { 
+                    recognition.start(); 
+                } catch(e){
+                    console.error("语音识别重启失败:", e);
+                }
+            };
+
+            recognition.start();
+        }
+
+        function processAndDrop(text) {
+            const content = text.trim();
+            if (!content) return;
+
+            // 检查是否包含中文字符
+            if (/[\u4e00-\u9fa5]/.test(content)) {
+                // 对于包含中文的文本，逐字掉落
+                for (let char of content) {
+                    if (char.trim()) {
+                        window.addTextBody(char);
+                    }
+                }
+            } else {
+                // 对于英文或数字，按空格分割成单词掉落
+                const words = content.split(/\s+/);
+                words.forEach(word => {
+                    if (word) {
+                        window.addTextBody(word);
+                    }
+                });
+            }
+        }
+
+        // --- 渲染与逻辑循环 ---
+        function loop() {
+            // 1. 获取人体轮廓
+            if (selfieSegmentation && video.readyState === 4 && video.currentTime !== lastVideoTime) {
+                lastVideoTime = video.currentTime;
+                selfieSegmentation.segmentForVideo(video, performance.now(), (result) => {
+                    // 根据轮廓更新物理边界
+                    updateBoundariesFromMask(result.categoryMask);
+                });
+            }
+
+            // 2. 绘制视频（可以关闭以提高性能）
+            // ctx.save();
+            // ctx.translate(canvas.width, 0);
+            // ctx.scale(-1, 1);
+            // ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // ctx.restore();
+
+            // 3. 清空画布，准备绘制文字
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 4. 绘制物理文字
+            drawPhysicsBodies();
+
+            requestAnimationFrame(loop);
+        }
+
+        function updateBoundariesFromMask(mask) {
+            if (!mask) return;
+
+            const MASK_DOWNSAMPLE = 4; // 降低采样率以提高性能
+            const PERSON_RADIUS = 4;
+
+            // 1. 将 mask 绘制到临时画布
+            const maskWidth = mask.width;
+            const maskHeight = mask.height;
+            tempCanvas.width = maskWidth;
+            tempCanvas.height = maskHeight;
+            tempCtx.putImageData(mask, 0, 0);
+
+            // 2. 移除旧的边界
+            if (staticPersonBodies.length > 0) {
+                Matter.World.remove(world, staticPersonBodies);
+                staticPersonBodies = [];
+            }
+
+            // 3. 遍历像素并创建新的边界粒子
+            const imageData = tempCtx.getImageData(0, 0, maskWidth, maskHeight).data;
+            const scaleX = canvas.width / maskWidth;
+            const scaleY = canvas.height / maskHeight;
+
+            for (let y = 0; y < maskHeight; y += MASK_DOWNSAMPLE) {
+                for (let x = 0; x < maskWidth; x += MASK_DOWNSAMPLE) {
+                    const index = (y * maskWidth + x) * 4;
+                    // 如果像素的 alpha 通道 > 0，说明这里是“人”
+                    if (imageData[index + 3] > 0) {
+                        const body = Matter.Bodies.circle(
+                            canvas.width - (x * scaleX), // 镜像反转X坐标
+                            y * scaleY,
+                            PERSON_RADIUS,
+                            { 
+                                isStatic: true,
+                                render: { visible: false } // 边界不可见
+                            }
+                        );
+                        staticPersonBodies.push(body);
+                    }
+                }
+            }
+
+            // 4. 将新的边界粒子添加到世界
+            Matter.World.add(world, staticPersonBodies);
+        }
+
+        window.manualDrop = function() {
+            const s = "天地玄黄宇宙洪荒";
+            window.addTextBody(s[Math.floor(Math.random()*s.length)]);
+        }
+
+        window.resetWorld = function() {
+            // 移除所有文字
+            Matter.World.remove(world, textBodies);
+            textBodies = [];
+
+            // 移除所有人形边界
+            if (staticPersonBodies.length > 0) {
+                Matter.World.remove(world, staticPersonBodies);
+                staticPersonBodies = [];
+            }
+
+            // 重置词频
+            wordFrequencies = {};
+        }
+
+        function drawPhysicsBodies() {
+            textBodies.forEach(body => {
+                const pos = body.position;
+                const angle = body.angle;
+
+                // 优化：屏幕外的物体不绘制，但MatterJS还在算
+                if (pos.y > canvas.height + 100) return;
+
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+                ctx.rotate(angle);
+
+                // 绘制圆角背景
+                const w = body.bounds.max.x - body.bounds.min.x;
+                const h = body.bounds.max.y - body.bounds.min.y;
+                
+                ctx.fillStyle = body.renderBgColor;
+                ctx.shadowColor = "rgba(0,0,0,0.5)";
+                ctx.shadowBlur = 5;
+                
+                ctx.beginPath();
+                ctx.roundRect(-w/2, -h/2, w, h, 6);
+                ctx.fill();
+                
+                // 绘制文字
+                ctx.fillStyle = body.renderTextColor;
+                ctx.shadowBlur = 0;
+                ctx.font = `bold ${body.renderFontSize}px Arial`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(body.renderText, 0, 2);
+
+                ctx.restore();
+            });
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            createStaticBoundaries(); // 窗口变化时重建地面
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

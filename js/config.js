@@ -130,8 +130,8 @@ const APP_CONFIG = {
         fallback: 'sans-serif',
         // OpenType.js字体路径（用于3D文字生成）
         chineseFontPath: 'assets/fonts/NotoSansSC-Regular.otf',
-        // 可选：使用在线CDN字体（无需下载）
-        chineseFontUrl: 'https://cdn.jsdelivr.net/npm/opentype.js@1.3.4/dist/fonts/NotoSansSC-Regular.otf'
+        // Google Fonts直接下载URL（作为CDN后备）
+        chineseFontUrl: 'https://fonts.gstatic.com/s/notosanssc/v36/k3kXo84MPvpLmixcA63oeALhL4iJ-Q7m8HGGjDc1-4A.woff'
     }
 };
 
